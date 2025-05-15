@@ -207,56 +207,88 @@ export const MediaProvider: React.FC<MediaProviderProps> = ({ children }) => {
       };
 
       // Get screen stream
-      const screenStream =
-        await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+      const screenStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+      
+      let streams = [screenStream];
+      let audioStream;
 
-      let finalStream = screenStream;
+      // Add microphone if audio is enabled
+      if (recordingOptions.audio) {
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          streams.push(audioStream);
+        } catch (err) {
+          console.warn('Microphone access denied:', err);
+        }
+      }
 
       // Add camera if enabled
       if (recordingOptions.camera) {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
-
-        // In a real application, we would combine these streams with a canvas
-        // For MVP, we'll just use the screen stream
-        // TODO: Implement picture-in-picture with camera
+        try {
+          const cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+          streams.push(cameraStream);
+        } catch (err) {
+          console.warn('Camera access denied:', err);
+        }
       }
 
-      // Create recorder
-      const recorder = new MediaRecorder(finalStream, {
-        mimeType: "video/webm;codecs=vp9",
+      // Combine all streams
+      const finalStream = new MediaStream();
+      streams.forEach(stream => {
+        stream.getTracks().forEach(track => {
+          finalStream.addTrack(track);
+        });
       });
+
+      // Create recorder with appropriate MIME type
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') 
+        ? 'video/webm;codecs=vp9,opus'
+        : 'video/webm';
+        
+      const recorder = new MediaRecorder(finalStream, {
+        mimeType,
+        videoBitsPerSecond: 2500000, // 2.5 Mbps
+      });
+
+      let startTime = Date.now();
+      let recordingDuration = 0;
+      let chunks: Blob[] = [];
 
       // Set up event handlers
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          setRecordedChunks((prev) => [...prev, event.data]);
+          chunks.push(event.data);
+          setRecordedChunks(chunks);
         }
       };
 
-      // Reset chunks
+      // Reset state
       setRecordedChunks([]);
+      setRecordingTime(0);
 
       // Start recording
-      recorder.start(1000); // Collect data every second
+      recorder.start(1000);
       setMediaRecorder(recorder);
       setIsRecording(true);
       setRecordingPaused(false);
-      setRecordingTime(0);
 
       // Start timer
       const timerInterval = setInterval(() => {
         if (!recordingPaused) {
-          setRecordingTime((prev) => prev + 1);
+          recordingDuration = Math.floor((Date.now() - startTime) / 1000);
+          setRecordingTime(recordingDuration);
         }
       }, 1000);
 
       // Clean up when recording stops
       recorder.onstop = () => {
         clearInterval(timerInterval);
-        screenStream.getTracks().forEach((track) => track.stop());
+        streams.forEach(stream => {
+          stream.getTracks().forEach(track => track.stop());
+        });
         setIsRecording(false);
       };
     } catch (err) {
@@ -285,12 +317,19 @@ export const MediaProvider: React.FC<MediaProviderProps> = ({ children }) => {
     if (!mediaRecorder) return null;
 
     return new Promise((resolve) => {
-      mediaRecorder.onstop = async () => {
+      const handleStop = async () => {
         try {
           // Create a blob from the recorded chunks
           const blob = new Blob(recordedChunks, {
-            type: "video/webm",
+            type: mediaRecorder.mimeType || "video/webm",
           });
+
+          // Verify blob size and duration
+          if (blob.size === 0 || recordingTime === 0) {
+            console.error("Invalid recording: No data or zero duration");
+            resolve(null);
+            return;
+          }
 
           // Create form data to upload
           const formData = new FormData();
@@ -311,7 +350,7 @@ export const MediaProvider: React.FC<MediaProviderProps> = ({ children }) => {
           );
 
           // Refresh videos list
-          fetchVideos();
+          await fetchVideos();
 
           // Return the video ID for redirection
           resolve(response.data._id);
@@ -320,6 +359,8 @@ export const MediaProvider: React.FC<MediaProviderProps> = ({ children }) => {
           resolve(null);
         }
       };
+
+      mediaRecorder.onstop = handleStop;
 
       // Stop the recording
       mediaRecorder.stop();
