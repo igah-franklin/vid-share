@@ -85,7 +85,9 @@ const RecordingModal: React.FC<RecordingModalProps> = ({ isOpen, onClose, mode: 
         const formData = new FormData();
         formData.append('video', blob, `recording-${Date.now()}.webm`);
         formData.append('title', `Recording ${new Date().toLocaleString()}`);
-        formData.append('duration', elapsedTime.toString());
+        const duration = Math.round(blob.size / (1024 * 1024) * 8); // Rough estimate based on file size
+        formData.append('duration', duration.toString());
+        formData.append('status', 'ready');
         formData.append('isPublic', 'false');
 
         console.log(blob, '*****')

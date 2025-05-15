@@ -150,7 +150,7 @@ const VideoDetail: React.FC = () => {
           controls 
           className="w-full h-full"
           poster="/uploads/thumbnails/default.jpg"
-          src={`/uploads/videos/${video.filename}`}
+          src={`http://localhost:5000/uploads/videos/${video.filename}`}
         >
           Your browser does not support the video tag.
         </video>

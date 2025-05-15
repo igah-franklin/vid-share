@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+router.use('/uploads/videos', express.static('uploads/videos'));
 const auth = require('../../middleware/auth');
 const multer = require('multer');
 const path = require('path');
