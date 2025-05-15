@@ -8,7 +8,9 @@ import {
   ArrowLeft,
   Clock,
   Eye,
+  X
 } from "lucide-react";
+import { useRef } from "react";
 import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 import AuthContext from "../context/AuthContext";
@@ -32,6 +34,7 @@ const VideoDetail: React.FC = () => {
   const { user } = useContext(AuthContext);
 
   const [video, setVideo] = useState<Video | null>(null);
+const videoRef = useRef<HTMLVideoElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -268,61 +271,72 @@ const VideoDetail: React.FC = () => {
             </div>
 
             {isEditing && (
-              <div className="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Trim Video
-                  </label>
-                  <div className="flex space-x-4">
-                    <input
-                      type="number"
-                      value={startTime}
-                      onChange={(e) => setStartTime(Number(e.target.value))}
-                      placeholder="Start time (s)"
-                      className="px-3 py-2 border rounded-md w-32"
-                    />
-                    <input
-                      type="number"
-                      value={endTime}
-                      onChange={(e) => setEndTime(Number(e.target.value))}
-                      placeholder="End time (s)"
-                      className="px-3 py-2 border rounded-md w-32"
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg w-full max-w-4xl p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Edit Video</h2>
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  <div className="aspect-video bg-black rounded-lg mb-6">
+                    <video
+                      ref={videoRef}
+                      src={`${BASE_URL}/uploads/videos/${video.filename}`}
+                      controls
+                      className="w-full h-full"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Add Text Overlay
-                  </label>
-                  <input
-                    type="text"
-                    value={overlayText}
-                    onChange={(e) => setOverlayText(e.target.value)}
-                    placeholder="Enter text to overlay"
-                    className="w-full px-3 py-2 border rounded-md"
-                  />
-                </div>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Trim Video
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="range"
+                          min="0"
+                          max={video.duration}
+                          value={startTime}
+                          onChange={(e) => setStartTime(Number(e.target.value))}
+                          className="flex-1"
+                        />
+                        <input
+                          type="range"
+                          min={startTime}
+                          max={video.duration}
+                          value={endTime}
+                          onChange={(e) => setEndTime(Number(e.target.value))}
+                          className="flex-1"
+                        />
+                      </div>
+                      <div className="flex justify-between mt-2 text-sm text-gray-600">
+                        <span>{formatTime(startTime)}</span>
+                        <span>{formatTime(endTime)}</span>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Add Link Overlay
-                  </label>
-                  <input
-                    type="url"
-                    value={overlayLink}
-                    onChange={(e) => setOverlayLink(e.target.value)}
-                    placeholder="Enter URL to overlay"
-                    className="w-full px-3 py-2 border rounded-md"
-                  />
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveChanges}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                <button
-                  onClick={handleSaveChanges}
-                  className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
-                >
-                  Save Changes
-                </button>
               </div>
             )}
           </div>
