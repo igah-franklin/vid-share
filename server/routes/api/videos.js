@@ -205,14 +205,19 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 
-    // Delete the actual file
-    const filePath = path.join(__dirname, '../../../uploads/videos', video.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    try {
+      // Delete the actual file
+      const filePath = path.join(__dirname, '../../uploads/videos', video.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
 
-    await video.remove();
-    res.json({ msg: 'Video removed' });
+      await video.deleteOne();
+      res.json({ msg: 'Video removed' });
+    } catch (err) {
+      console.error('Error deleting video file:', err);
+      res.status(500).json({ msg: 'Error deleting video file' });
+    }
   } catch (err) {
     console.error(err.message);
     if (err.kind === 'ObjectId') {
