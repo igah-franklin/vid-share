@@ -77,7 +77,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const res = await axios.post("/api/users", { name, email, password });
+      const res = await axios.post(`${BASE_URL}/api/users`, {
+        name,
+        email,
+        password,
+      });
       localStorage.setItem("token", res.data.token);
       axios.defaults.headers.common["x-auth-token"] = res.data.token;
 
@@ -95,7 +99,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await axios.post("/api/auth/login", { email, password });
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
+        email,
+        password,
+      });
       localStorage.setItem("token", res.data.token);
       axios.defaults.headers.common["x-auth-token"] = res.data.token;
 
