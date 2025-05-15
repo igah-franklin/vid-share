@@ -36,6 +36,10 @@ const VideoDetail: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(0);
+  const [overlayText, setOverlayText] = useState('');
+  const [overlayLink, setOverlayLink] = useState('');
   
   useEffect(() => {
     const fetchVideo = async () => {
@@ -63,11 +67,23 @@ const VideoDetail: React.FC = () => {
     try {
       const res = await axios.put(`/api/videos/${id}`, {
         title,
-        description
+        description,
+        editConfig: {
+          trim: { start: startTime, end: endTime },
+          overlays: {
+            text: overlayText,
+            link: overlayLink
+          }
+        }
       });
       
       setVideo(res.data);
       setIsEditing(false);
+      // Reset editing states
+      setStartTime(0);
+      setEndTime(0);
+      setOverlayText('');
+      setOverlayLink('');
     } catch (err) {
       console.error('Error updating video:', err);
       setError('Failed to update video');
@@ -202,25 +218,91 @@ const VideoDetail: React.FC = () => {
             </div>
             
             <div className="flex space-x-2">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+            >
+              <Edit size={18} />
+            </button>
+            <button 
+              onClick={() => {
+                const url = `${window.location.origin}/videos/${id}`;
+                navigator.clipboard.writeText(url);
+                alert('Link copied to clipboard!');
+              }}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+            >
+              <Share2 size={18} />
+            </button>
+            <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
+              <Download size={18} />
+            </button>
+            <button
+              onClick={handleDeleteVideo}
+              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+            >
+              <Trash size={18} />
+            </button>
+          </div>
+          
+          {isEditing && (
+            <div className="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trim Video
+                </label>
+                <div className="flex space-x-4">
+                  <input
+                    type="number"
+                    value={startTime}
+                    onChange={(e) => setStartTime(Number(e.target.value))}
+                    placeholder="Start time (s)"
+                    className="px-3 py-2 border rounded-md w-32"
+                  />
+                  <input
+                    type="number"
+                    value={endTime}
+                    onChange={(e) => setEndTime(Number(e.target.value))}
+                    placeholder="End time (s)"
+                    className="px-3 py-2 border rounded-md w-32"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Add Text Overlay
+                </label>
+                <input
+                  type="text"
+                  value={overlayText}
+                  onChange={(e) => setOverlayText(e.target.value)}
+                  placeholder="Enter text to overlay"
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Add Link Overlay
+                </label>
+                <input
+                  type="url"
+                  value={overlayLink}
+                  onChange={(e) => setOverlayLink(e.target.value)}
+                  placeholder="Enter URL to overlay"
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              
               <button
-                onClick={() => setIsEditing(true)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                onClick={handleSaveChanges}
+                className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
               >
-                <Edit size={18} />
-              </button>
-              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                <Share2 size={18} />
-              </button>
-              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                <Download size={18} />
-              </button>
-              <button
-                onClick={handleDeleteVideo}
-                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
-              >
-                <Trash size={18} />
+                Save Changes
               </button>
             </div>
+          )}
           </div>
           
           <div className="flex items-start space-x-3 mt-6">
