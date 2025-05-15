@@ -28,7 +28,7 @@ const upload = multer({
     const filetypes = /mp4|webm|ogg/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -71,7 +71,7 @@ router.get('/archived', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
-    
+
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }
@@ -103,7 +103,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/', auth, upload.single('video'), async (req, res) => {
   try {
     const { title, description, duration, isPublic } = req.body;
-    
+
     if (!req.file) {
       return res.status(400).json({ msg: 'No video file uploaded' });
     }
@@ -130,11 +130,10 @@ router.post('/', auth, upload.single('video'), async (req, res) => {
 // @desc    Update video details
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
-  const { title, description, isPublic } = req.body;
-
   try {
+    const { title, description, editConfig, isPublic } = req.body;
     let video = await Video.findById(req.params.id);
-    
+
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }
@@ -144,7 +143,27 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 
-    // Update fields
+    if (editConfig?.trim) {
+      const { start, end } = editConfig.trim;
+      const inputPath = path.join(__dirname, '../../uploads/videos', video.filename);
+      const outputPath = path.join(__dirname, '../../uploads/videos', `edited-${video.filename}`);
+
+      const ffmpeg = require('fluent-ffmpeg');
+      await new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+          .setStartTime(start)
+          .setDuration(end - start)
+          .output(outputPath)
+          .on('end', resolve)
+          .on('error', reject)
+          .run();
+      });
+
+      // Replace original file with edited version
+      fs.unlinkSync(inputPath);
+      fs.renameSync(outputPath, inputPath);
+    }
+      // Update fields
     if (title) video.title = title;
     if (description !== undefined) video.description = description;
     if (isPublic !== undefined) video.isPublic = isPublic === 'true';
@@ -166,7 +185,7 @@ router.put('/:id', auth, async (req, res) => {
 router.put('/:id/archive', auth, async (req, res) => {
   try {
     let video = await Video.findById(req.params.id);
-    
+
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }
@@ -178,7 +197,7 @@ router.put('/:id/archive', auth, async (req, res) => {
 
     video.status = 'archived';
     await video.save();
-    
+
     res.json(video);
   } catch (err) {
     console.error(err.message);
@@ -195,7 +214,7 @@ router.put('/:id/archive', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
-    
+
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }

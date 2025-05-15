@@ -65,8 +65,8 @@ const RecordingModal: React.FC<RecordingModalProps> = ({
       }
 
       const recorder = new MediaRecorder(finalStream, {
-        mimeType: "video/webm;codecs=vp8,opus",
-        videoBitsPerSecond: 2500000,
+        mimeType: "video/webm",
+        videoBitsPerSecond: 3000000,
       });
 
       recorder.ondataavailable = (event) => {

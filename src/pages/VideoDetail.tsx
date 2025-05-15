@@ -66,17 +66,24 @@ const VideoDetail: React.FC = () => {
 
   const handleSaveChanges = async () => {
     try {
+      if (!startTime || !endTime || startTime >= endTime) {
+        alert('Please set valid start and end times');
+        return;
+      }
+
       const res = await axios.put(`${BASE_URL}/api/videos/${id}`, {
         title,
         description,
         editConfig: {
-          trim: { start: startTime, end: endTime },
-          overlays: {
-            text: overlayText,
-            link: overlayLink,
-          },
-        },
+          trim: { start: startTime, end: endTime }
+        }
       });
+
+      // Reload the video after editing
+      const videoElement = document.querySelector('video');
+      if (videoElement) {
+        videoElement.load();
+      }
 
       setVideo(res.data);
       setIsEditing(false);
