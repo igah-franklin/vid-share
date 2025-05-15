@@ -22,6 +22,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Handle video streaming with range requests
 app.get('/uploads/videos/:filename', (req, res) => {
   const videoPath = path.join(__dirname, 'uploads/videos', req.params.filename);
+  
+  if (!fs.existsSync(videoPath)) {
+    return res.status(404).send('Video not found');
+  }
+
   const stat = fs.statSync(videoPath);
   const fileSize = stat.size;
   const range = req.headers.range;
@@ -29,7 +34,13 @@ app.get('/uploads/videos/:filename', (req, res) => {
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024*1024, fileSize - 1);
+    
+    if (start >= fileSize || start < 0) {
+      res.status(416).send('Requested range not satisfiable');
+      return;
+    }
+
     const chunksize = (end - start) + 1;
     const file = fs.createReadStream(videoPath, { start, end });
     const head = {
@@ -42,6 +53,7 @@ app.get('/uploads/videos/:filename', (req, res) => {
     file.pipe(res);
   } else {
     const head = {
+      'Accept-Ranges': 'bytes',
       'Content-Length': fileSize,
       'Content-Type': 'video/webm',
     };
