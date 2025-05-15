@@ -17,7 +17,8 @@ app.use(cors());
 app.use(express.json());
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/videos', express.static(path.join(__dirname, 'uploads/videos')));
 
 // Define routes
 app.use('/api/auth', require('./routes/api/auth'));
