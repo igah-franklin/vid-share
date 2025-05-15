@@ -1,17 +1,18 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Share2, 
-  Download, 
-  Edit, 
-  Trash, 
+import React, { useEffect, useState, useContext } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Share2,
+  Download,
+  Edit,
+  Trash,
   ArrowLeft,
   Clock,
-  Eye
-} from 'lucide-react';
-import axios from 'axios';
-import { formatDistanceToNow } from 'date-fns';
-import AuthContext from '../context/AuthContext';
+  Eye,
+} from "lucide-react";
+import axios from "axios";
+import { formatDistanceToNow } from "date-fns";
+import AuthContext from "../context/AuthContext";
+import { BASE_URL } from "../baseurl";
 
 interface Video {
   _id: string;
@@ -29,35 +30,35 @@ const VideoDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  
+
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
-  const [overlayText, setOverlayText] = useState('');
-  const [overlayLink, setOverlayLink] = useState('');
-  
+  const [overlayText, setOverlayText] = useState("");
+  const [overlayLink, setOverlayLink] = useState("");
+
   useEffect(() => {
     const fetchVideo = async () => {
       setLoading(true);
-      
+
       try {
-        const res = await axios.get(`http://localhost:5000/api/videos/${id}`);
+        const res = await axios.get(`${BASE_URL}/api/videos/${id}`);
         setVideo(res.data);
         setTitle(res.data.title);
-        setDescription(res.data.description || '');
+        setDescription(res.data.description || "");
       } catch (err) {
-        console.error('Error fetching video:', err);
-        setError('Failed to load video');
+        console.error("Error fetching video:", err);
+        setError("Failed to load video");
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (id) {
       fetchVideo();
     }
@@ -65,49 +66,49 @@ const VideoDetail: React.FC = () => {
 
   const handleSaveChanges = async () => {
     try {
-      const res = await axios.put(`/api/videos/${id}`, {
+      const res = await axios.put(`${BASE_URL}/api/videos/${id}`, {
         title,
         description,
         editConfig: {
           trim: { start: startTime, end: endTime },
           overlays: {
             text: overlayText,
-            link: overlayLink
-          }
-        }
+            link: overlayLink,
+          },
+        },
       });
-      
+
       setVideo(res.data);
       setIsEditing(false);
       // Reset editing states
       setStartTime(0);
       setEndTime(0);
-      setOverlayText('');
-      setOverlayLink('');
+      setOverlayText("");
+      setOverlayLink("");
     } catch (err) {
-      console.error('Error updating video:', err);
-      setError('Failed to update video');
+      console.error("Error updating video:", err);
+      setError("Failed to update video");
     }
   };
 
   const handleDeleteVideo = async () => {
-    if (!window.confirm('Are you sure you want to delete this video?')) {
+    if (!window.confirm("Are you sure you want to delete this video?")) {
       return;
     }
-    
+
     try {
-      await axios.delete(`http://localhost:5000/api/videos/${id}`);
-      navigate('/');
+      await axios.delete(`${BASE_URL}/api/videos/${id}`);
+      navigate("/");
     } catch (err) {
-      console.error('Error deleting video:', err);
-      setError('Failed to delete video');
+      console.error("Error deleting video:", err);
+      setError("Failed to delete video");
     }
   };
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   if (loading) {
@@ -122,10 +123,10 @@ const VideoDetail: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error || 'Video not found'}
+          {error || "Video not found"}
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="mt-4 flex items-center text-purple-600 hover:text-purple-700"
         >
           <ArrowLeft size={16} className="mr-1" />
@@ -138,28 +139,31 @@ const VideoDetail: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto py-6 px-4">
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
         className="mb-6 flex items-center text-purple-600 hover:text-purple-700"
       >
         <ArrowLeft size={16} className="mr-1" />
         Back to videos
       </button>
-      
+
       <div className="bg-black rounded-lg overflow-hidden mb-6 aspect-video flex items-center justify-center">
-        <video 
-          controls 
+        <video
+          controls
           className="w-full h-full"
           poster="/uploads/thumbnails/default.jpg"
-          src={`http://localhost:5000/uploads/videos/${video.filename}`}
+          src={`${BASE_URL}/uploads/videos/${video.filename}`}
         >
           Your browser does not support the video tag.
         </video>
       </div>
-      
+
       {isEditing ? (
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="mb-4">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Title
             </label>
             <input
@@ -170,9 +174,12 @@ const VideoDetail: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          
+
           <div className="mb-6">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Description
             </label>
             <textarea
@@ -183,7 +190,7 @@ const VideoDetail: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          
+
           <div className="flex space-x-3">
             <button
               onClick={handleSaveChanges}
@@ -203,7 +210,9 @@ const VideoDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{video.title}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {video.title}
+              </h1>
               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                 <div className="flex items-center">
                   <Clock size={16} className="mr-1.5" />
@@ -211,103 +220,109 @@ const VideoDetail: React.FC = () => {
                 </div>
                 <div className="flex items-center">
                   <Eye size={16} className="mr-1.5" />
-                  <span>{video.views} view{video.views !== 1 ? 's' : ''}</span>
+                  <span>
+                    {video.views} view{video.views !== 1 ? "s" : ""}
+                  </span>
                 </div>
-                <span>{formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}</span>
+                <span>
+                  {formatDistanceToNow(new Date(video.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
               </div>
             </div>
-            
+
             <div className="flex space-x-2">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-            >
-              <Edit size={18} />
-            </button>
-            <button 
-              onClick={() => {
-                const url = `${window.location.origin}/videos/${id}`;
-                navigator.clipboard.writeText(url);
-                alert('Link copied to clipboard!');
-              }}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-            >
-              <Share2 size={18} />
-            </button>
-            <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-              <Download size={18} />
-            </button>
-            <button
-              onClick={handleDeleteVideo}
-              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
-            >
-              <Trash size={18} />
-            </button>
-          </div>
-          
-          {isEditing && (
-            <div className="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Trim Video
-                </label>
-                <div className="flex space-x-4">
-                  <input
-                    type="number"
-                    value={startTime}
-                    onChange={(e) => setStartTime(Number(e.target.value))}
-                    placeholder="Start time (s)"
-                    className="px-3 py-2 border rounded-md w-32"
-                  />
-                  <input
-                    type="number"
-                    value={endTime}
-                    onChange={(e) => setEndTime(Number(e.target.value))}
-                    placeholder="End time (s)"
-                    className="px-3 py-2 border rounded-md w-32"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Add Text Overlay
-                </label>
-                <input
-                  type="text"
-                  value={overlayText}
-                  onChange={(e) => setOverlayText(e.target.value)}
-                  placeholder="Enter text to overlay"
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Add Link Overlay
-                </label>
-                <input
-                  type="url"
-                  value={overlayLink}
-                  onChange={(e) => setOverlayLink(e.target.value)}
-                  placeholder="Enter URL to overlay"
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              
               <button
-                onClick={handleSaveChanges}
-                className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
+                onClick={() => setIsEditing(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
               >
-                Save Changes
+                <Edit size={18} />
+              </button>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/videos/${id}`;
+                  navigator.clipboard.writeText(url);
+                  alert("Link copied to clipboard!");
+                }}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+              >
+                <Share2 size={18} />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
+                <Download size={18} />
+              </button>
+              <button
+                onClick={handleDeleteVideo}
+                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+              >
+                <Trash size={18} />
               </button>
             </div>
-          )}
+
+            {isEditing && (
+              <div className="mt-6 space-y-4 bg-gray-50 p-4 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Trim Video
+                  </label>
+                  <div className="flex space-x-4">
+                    <input
+                      type="number"
+                      value={startTime}
+                      onChange={(e) => setStartTime(Number(e.target.value))}
+                      placeholder="Start time (s)"
+                      className="px-3 py-2 border rounded-md w-32"
+                    />
+                    <input
+                      type="number"
+                      value={endTime}
+                      onChange={(e) => setEndTime(Number(e.target.value))}
+                      placeholder="End time (s)"
+                      className="px-3 py-2 border rounded-md w-32"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Add Text Overlay
+                  </label>
+                  <input
+                    type="text"
+                    value={overlayText}
+                    onChange={(e) => setOverlayText(e.target.value)}
+                    placeholder="Enter text to overlay"
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Add Link Overlay
+                  </label>
+                  <input
+                    type="url"
+                    value={overlayLink}
+                    onChange={(e) => setOverlayLink(e.target.value)}
+                    placeholder="Enter URL to overlay"
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveChanges}
+                  className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            )}
           </div>
-          
+
           <div className="flex items-start space-x-3 mt-6">
             <div className="h-10 w-10 bg-purple-700 text-white rounded-full flex items-center justify-center text-sm">
-              {user?.name?.charAt(0) || 'U'}
+              {user?.name?.charAt(0) || "U"}
             </div>
             <div>
               <p className="font-medium text-gray-900">{user?.name}</p>
